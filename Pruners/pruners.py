@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-
+import os.path
 class Pruner:
     def __init__(self, masked_parameters):
         self.masked_parameters = list(masked_parameters)
@@ -9,7 +9,7 @@ class Pruner:
     def score(self, model, loss, dataloader, device):
         raise NotImplementedError
 
-    def _global_mask(self, sparsity):
+    def _global_mask(self, sparsity,res_dir):
         r"""Updates masks of model with scores by sparsity level globally.
         """
         # # Set score for masked parameters to -inf 
@@ -18,7 +18,19 @@ class Pruner:
         #     score[mask == 0.0] = -np.inf
 
         # Threshold scores
-        global_scores = torch.cat([torch.flatten(v) for v in self.scores.values()])
+        if os.path.exists("{}/prev_mask.pt".format(res_dir)):
+            prev_mask = torch.load("{}/prev_mask.pt".format(res_dir))
+            its = 0
+            scoring = {}
+            for keys in self.scores.keys():
+               
+               scoring[keys] = self.scores[keys] * prev_mask[its]
+               its = its + 1 
+            global_scores = torch.cat([torch.flatten(v) for v in scoring.values()])
+        else:
+            global_scores = torch.cat([torch.flatten(v) for v in self.scores.values()])
+
+        masks = []
         k = int((1.0 - sparsity) * global_scores.numel())
         if not k < 1:
             threshold, _ = torch.kthvalue(global_scores, k)
@@ -27,6 +39,9 @@ class Pruner:
                 zero = torch.tensor([0.]).to(mask.device)
                 one = torch.tensor([1.]).to(mask.device)
                 mask.copy_(torch.where(score <= threshold, zero, one))
+                masks.append(mask)
+        prev_mask = masks
+        torch.save(prev_mask,"{}/prev_mask.pt".format(res_dir))        
     
     def _local_mask(self, sparsity):
         r"""Updates masks of model with scores by sparsity level parameter-wise.
@@ -40,11 +55,11 @@ class Pruner:
                 one = torch.tensor([1.]).to(mask.device)
                 mask.copy_(torch.where(score <= threshold, zero, one))
 
-    def mask(self, sparsity, scope):
+    def mask(self, sparsity, scope,res_dir):
         r"""Updates masks of model with scores by sparsity according to scope.
         """
         if scope == 'global':
-            self._global_mask(sparsity)
+            self._global_mask(sparsity,res_dir)
         if scope == 'local':
             self._local_mask(sparsity)
 

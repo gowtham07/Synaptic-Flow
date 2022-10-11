@@ -65,7 +65,7 @@ def run(args):
         return average_scores
 
     ## Train and Save Data ##
-    _, inv_size = layer_names(init_model)
+    _, inv_size = layer_names(model)
     Wscore = []
     for epoch in tqdm(range(args.post_epochs)):
         Wscore.append(average_score(model))

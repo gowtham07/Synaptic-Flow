@@ -30,7 +30,7 @@ def fc(input_shape, num_classes, dense_classifier=False, pretrained=False, L=6, 
   return model
 
 
-def conv(input_shape, num_classes, dense_classifier=False, pretrained=False, L=3, N=32, nonlinearity=nn.ReLU()): 
+def conv(input_shape, num_classes, dense_classifier=False, pretrained=False, L=7, N=32, nonlinearity=nn.ReLU()): 
   channels, width, height = input_shape
   
   # Convolutional feature extractor
@@ -48,9 +48,14 @@ def conv(input_shape, num_classes, dense_classifier=False, pretrained=False, L=3
   else:
     modules.append(layers.Linear(N * width * height, num_classes))
   model = nn.Sequential(*modules)
-
+  model.apply(weights_init)
   # Pretrained model
   if pretrained:
     print("WARNING: this model does not have pretrained weights.")
   
   return model
+
+def weights_init(m):
+    if type(m) == layers.Conv2d:
+        
+        torch.nn.init.xavier_uniform(m.weight)

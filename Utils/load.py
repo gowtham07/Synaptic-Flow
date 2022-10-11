@@ -96,6 +96,7 @@ def model(model_architecture, model_class):
         'conv' : mlp.conv,
     }
     lottery_models = {
+        'conv' : mlp.conv,
         'vgg11' : lottery_vgg.vgg11,
         'vgg11-bn' : lottery_vgg.vgg11_bn,
         'vgg13' : lottery_vgg.vgg13,
